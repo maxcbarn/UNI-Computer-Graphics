@@ -116,7 +116,7 @@ function main( ) {
     var moveOrigin = [ m3.translation(-70,-75) , m3.translation(-50, -75) ];
     var translations = translationsOrigins;
     var rotationsOrigins = [ 0 , 0 ];
-    var rotationSpeed =[ 1 , -0.7 ];
+    var rotationSpeed =[ 10 , -7 ];
     var rotations = rotationsOrigins;
     var scalesOrigins = [ [ 1 , 1 ] , [ 1 , 1 ] ];
     var scales = scalesOrigins;
