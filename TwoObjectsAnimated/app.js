@@ -112,11 +112,11 @@ function main( ) {
     var colorLocation = gl.getUniformLocation( program , "u_color");
 
     var quantityOfObjs = 2
-    var translationsOrigins = [ [ 200 , 200 ] , [ 300 , 300 ] ];
-    var moveOrigin = [ m3.translation(-70,-75) , m3.translation(-50, -75) ];
+    var translationsOrigins = [ [ 200 , 200 ] , [ 350 , 300 ] ];
+    var moveOrigin = [ m3.translation(-75,-55) , m3.translation(-50, -75) ];
     var translations = translationsOrigins;
     var rotationsOrigins = [ 0 , 0 ];
-    var rotationSpeed =[ 10 , -7 ];
+    var rotationSpeed =[ -10 , 7 ];
     var rotations = rotationsOrigins;
     var scalesOrigins = [ [ 1 , 1 ] , [ 1 , 1 ] ];
     var scales = scalesOrigins;
