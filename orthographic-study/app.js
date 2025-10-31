@@ -70,6 +70,18 @@ let m4 = {
       -1, 1, 0, 1,
     ];
   },
+  orthographic: function(left, right, bottom, top, near, far) {
+    return [
+      2 / (right - left), 0, 0, 0,
+      0, 2 / (top - bottom), 0, 0,
+      0, 0, 2 / (near - far), 0,
+ 
+      (left + right) / (left - right),
+      (bottom + top) / (bottom - top),
+      (near + far) / (near - far),
+      1,
+    ];
+  },
   translate: function(m, tx, ty, tz) {
     return m4.multiply(m, m4.translation(tx, ty, tz));
   },
@@ -176,6 +188,8 @@ function main( ) {
     let program = createProgram(gl, vertexShader, fragmentShader);
     gl.useProgram(program);
     gl.clearColor(0, 0, 0, 0);
+    gl.canvas.width = canvas.width;
+    gl.canvas.height = canvas.height;
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     
@@ -184,7 +198,7 @@ function main( ) {
     let matrixLocation = gl.getUniformLocation( program , "u_matrix" );
 
     let quantityOfObjs = 2
-    let translationsOrigins = [ [ 200 , 200 , 0 ] , [ 100 , 100 , 0 ] ];
+    let translationsOrigins = [ [ 200 , 200 , -25 ] , [ 100 , 100 , -20 ] ];
     let moveOrigin = [ m4.translation(-70,-75,0) , m4.translation(-50, -75,0) ];
     let translations = translationsOrigins;
     let rotationsOrigins = [ [ 50 , 0 , 0 ] , [ 0 , 0 , 50 ] ];
@@ -206,7 +220,7 @@ function main( ) {
     let offset = 0;        // start at the beginning of the buffer
     gl.vertexAttribPointer( positionLocation, size, type, normalize, stride, offset);
 
-    SetGeometry(gl);
+    setGeometry(gl);
 
     let colorBuffer = gl.createBuffer()
     gl.bindBuffer( gl.ARRAY_BUFFER , colorBuffer );
@@ -221,9 +235,7 @@ function main( ) {
     gl.vertexAttribPointer(
         colorLocation, size, type, normalize, stride, offset);
  
-
-    gl.canvas.width = canvas.width;
-    gl.canvas.height = canvas.height;
+    gl.enable( gl.CULL_FACE )
     gl.enable(gl.DEPTH_TEST);
     let then = 0;
 
@@ -246,13 +258,13 @@ function main( ) {
 
         for ( let index = 0; index < quantityOfObjs ; index++ ) {
           rotations[index][1] = rotationSpeed[index] * deltaTime + rotationsOrigins[index][1];
-          matrix = m4.projection(gl.canvas.clientWidth, gl.canvas.clientHeight, 400);
+          matrix = m4.orthographic( 0 , gl.canvas.width , gl.canvas.height , 0 , 0 , 100 );
           matrix = m4.translate(matrix, translations[index][0], translations[index][1], translations[index][2]);
           matrix = m4.xRotate(matrix, rotations[index][0]);
           matrix = m4.yRotate(matrix, rotations[index][1]);
           matrix = m4.zRotate(matrix, rotations[index][2]);
           matrix = m4.scale(matrix, scales[index][0], scales[index][1], scales[index][2]);
-          //matrix = m4.multiply( matrix , moveOrigin[index] );
+          matrix = m4.multiply( matrix , moveOrigin[index] );
           gl.uniformMatrix4fv(matrixLocation, false, matrix);
           
           gl.drawArrays(primitiveType, offset, count);
@@ -261,33 +273,60 @@ function main( ) {
     }
 }
 
-function SetGeometry(gl) {
+function CreateShader(gl, type, source) {
+  let shader = gl.createShader( type );
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  let success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+  if (success) {
+    return shader;
+  }
+
+  console.log(gl.getShaderInfoLog(shader));
+  gl.deleteShader(shader);
+}
+
+function createProgram(gl, vertexShader, fragmentShader) {
+  let program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  let success = gl.getProgramParameter(program, gl.LINK_STATUS);
+  if (success) {
+    return program;
+  }
+ 
+  console.log(gl.getProgramInfoLog(program));
+  gl.deleteProgram(program);
+}
+
+function setGeometry(gl) {
   gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array([
           // left column front
-            0,   0,  0,
-           30,   0,  0,
-            0, 150,  0,
-            0, 150,  0,
-           30,   0,  0,
-           30, 150,  0,
+          0,   0,  0,
+          0, 150,  0,
+          30,   0,  0,
+          0, 150,  0,
+          30, 150,  0,
+          30,   0,  0,
 
           // top rung front
-           30,   0,  0,
+          30,   0,  0,
+          30,  30,  0,
           100,   0,  0,
-           30,  30,  0,
-           30,  30,  0,
-          100,   0,  0,
+          30,  30,  0,
           100,  30,  0,
+          100,   0,  0,
 
           // middle rung front
-           30,  60,  0,
-           67,  60,  0,
-           30,  90,  0,
-           30,  90,  0,
-           67,  60,  0,
-           67,  90,  0,
+          30,  60,  0,
+          30,  90,  0,
+          67,  60,  0,
+          30,  90,  0,
+          67,  90,  0,
+          67,  60,  0,
 
           // left column back
             0,   0,  30,
@@ -339,27 +378,27 @@ function SetGeometry(gl) {
 
           // between top rung and middle
           30,   30,   0,
+          30,   60,  30,
           30,   30,  30,
-          30,   60,  30,
           30,   30,   0,
-          30,   60,  30,
           30,   60,   0,
+          30,   60,  30,
 
           // top of middle rung
           30,   60,   0,
+          67,   60,  30,
           30,   60,  30,
-          67,   60,  30,
           30,   60,   0,
-          67,   60,  30,
           67,   60,   0,
+          67,   60,  30,
 
           // right of middle rung
           67,   60,   0,
+          67,   90,  30,
           67,   60,  30,
-          67,   90,  30,
           67,   60,   0,
-          67,   90,  30,
           67,   90,   0,
+          67,   90,  30,
 
           // bottom of middle rung.
           30,   90,   0,
@@ -371,11 +410,11 @@ function SetGeometry(gl) {
 
           // right of bottom
           30,   90,   0,
+          30,  150,  30,
           30,   90,  30,
-          30,  150,  30,
           30,   90,   0,
-          30,  150,  30,
           30,  150,   0,
+          30,  150,  30,
 
           // bottom
           0,   150,   0,
@@ -396,6 +435,7 @@ function SetGeometry(gl) {
       gl.STATIC_DRAW);
 }
 
+// Fill the current ARRAY_BUFFER buffer with colors for the 'F'.
 function setColors(gl) {
   gl.bufferData(
       gl.ARRAY_BUFFER,
@@ -531,31 +571,5 @@ function setColors(gl) {
       gl.STATIC_DRAW);
 }
 
-function CreateShader(gl, type, source) {
-  let shader = gl.createShader( type );
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  let success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-  if (success) {
-    return shader;
-  }
-
-  console.log(gl.getShaderInfoLog(shader));
-  gl.deleteShader(shader);
-}
-
-function createProgram(gl, vertexShader, fragmentShader) {
-  let program = gl.createProgram();
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
-  let success = gl.getProgramParameter(program, gl.LINK_STATUS);
-  if (success) {
-    return program;
-  }
- 
-  console.log(gl.getProgramInfoLog(program));
-  gl.deleteProgram(program);
-}
 
 main();
