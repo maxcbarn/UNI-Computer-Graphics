@@ -2,14 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale1.0">
+    <meta name="viewport" content="width=device-width">
     <title>WebGl Study</title>
     <style>
-        @import url("https://webgl2fundamentals.org/webgl/resources/webgl-tutorials.css");
+        canvas {
+            outline: 4px solid black; /* Shorthand: width style color */
+            display: block;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
-    <canvas id="canvas" width="800" height="600" display="block" ></canvas>
+    <canvas id="canvas"  width="1400" height="700" ></canvas>
     <div id="uiContainer">
         <div id="ui">
             <div id="x"></div>
@@ -20,7 +24,6 @@
             <div id="scaleY"></div>
         </div>
     </div>
-    <script src="https://webgl2fundamentals.org/webgl/resources/webgl-lessons-ui.js"></script>
-    <script type="module" src="./app.js"></script>
+    <script src="./app.js" type="module" ></script>
 </body>
 </html>
