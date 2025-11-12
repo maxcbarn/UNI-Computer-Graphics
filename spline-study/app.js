@@ -4,6 +4,7 @@ import { matrix4x4 } from "./matrix.js";
 import { vector4 } from "./vector.js";
 import { SetColors , SetGeometry } from "./fgeometry.js";
 import { Cube, Obj } from "./objects.js";
+import { B_Spline } from "./b-spline.js";
 
 async function ReadFile( fileLocation ) {
   return await fetch( fileLocation ).then(response => { return response.text(); });
@@ -17,26 +18,18 @@ async function main( ) {
   const vaos = {};
   let objects = [];
   
-  
-  glObjs.fragmentShaderSource = await ReadFile( './shader.frag' )
-  glObjs.vertexShaderSource = await ReadFile( './shader.vert' )
-  
   htmlObjs.canvas = document.querySelector("#canvas");
   let gl = htmlObjs.canvas.getContext("webgl2");
-  
-  glObjs.vertexShader = CreateShader( gl , gl.VERTEX_SHADER , glObjs.vertexShaderSource );
-  glObjs.fragmentShader = CreateShader( gl , gl.FRAGMENT_SHADER , glObjs.fragmentShaderSource );
-  glObjs.program = CreateProgram( gl , glObjs.vertexShader , glObjs.fragmentShader );
 
+  SetupProgram( glObjs , gl );
   gl.useProgram( glObjs.program );
+  
+  CreateVarLocations( glObjs , varLocations );
+
   gl.clearColor( 0 , 0 , 0 , 0 );
   gl.canvas.width = htmlObjs.canvas.width;
   gl.canvas.height = htmlObjs.canvas.height;
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  
-  varLocations.a_position = gl.getAttribLocation( glObjs.program, "a_position" );
-  varLocations.a_color = gl.getAttribLocation( glObjs.program , "a_color");
-  varLocations.u_matrix = gl.getUniformLocation( glObjs.program , "u_matrix" );
   
   CreateFVao( gl , vaos , varLocations );
   CreateCubeVao( gl , vaos , varLocations );
@@ -44,11 +37,15 @@ async function main( ) {
   objects.push( new Obj( vaos.fVao , vector4.Create( 50 , 50 , -500 , 1 ) , vector4.Create( Math.PI , 0 , 0 , 1 ) , vector4.Create( 1 , 1 , 1 , 1 ) , gl.TRIANGLES , 0 , 16 * 6 ) )
   objects.push( new Cube( vaos.cubeVao , vector4.Create( -250 , -250 , -500 , 1 ) , vector4.Create( Math.PI , 1.5 , 0 , 1 ) , vector4.Create( 1 , 1 , 1 , 1 ) , gl.TRIANGLES , 0 , 6 * 6 ) )
   
+  let spline = new B_Spline();
+  CreateSpline( spline );
+
   camera.up = vector4.Create( 0 , 1 , 0 , 0 );
   camera.target = vector4.Create( 0 , 0 , -1 , 0 );
-  camera.translation = vector4.Create( 0 , 200 , 0 , 1 );  
+  camera.translation = vector4.Create( 0 , 0 , 0 , 1 );  
 
-
+  let t = 0;
+  let speed = 0.25;
   let then = 0;
   //gl.enable( gl.CULL_FACE )
   gl.enable( gl.DEPTH_TEST );
@@ -63,27 +60,67 @@ async function main( ) {
     now *= 0.001;
     let deltaTime = now - then;
     then = now;
-    let projectionMatrix = matrix4x4.Perspective( 60 , gl.canvas.clientWidth / gl.canvas.clientHeight , 1 , 1000 );
+
+    t += speed * deltaTime;
+
+    if( t > spline.GetMaxT() ) {
+      t = 0;
+    }
+
+    objects[1].position = spline.GetPoint( t );
+
+    let projectionMatrix = matrix4x4.Perspective( 80 , gl.canvas.clientWidth / gl.canvas.clientHeight , 1 , 5000 );
     let viewMatrix = matrix4x4.ViewMatrix( camera.translation , camera.up , camera.target );
-    
-    let matrix = matrix4x4.Identity();
 
     for ( let index = 0 ; index < objects.length ; index++ ) {
       gl.bindVertexArray( objects[index].vao );
-      matrix = matrix4x4.Identity();
-      matrix = matrix4x4.Mult( matrix , projectionMatrix );
-      matrix = matrix4x4.Mult( matrix , viewMatrix );
-      matrix = matrix4x4.Mult( matrix , matrix4x4.Translation( objects[index].position[0] , objects[index].position[1] , objects[index].position[2] ) );
-      matrix = matrix4x4.Mult( matrix , matrix4x4.XRotation( objects[index].rotation[0] ) );
-      matrix = matrix4x4.Mult( matrix , matrix4x4.YRotation( objects[index].rotation[1] ) );
-      matrix = matrix4x4.Mult( matrix , matrix4x4.ZRotation( objects[index].rotation[2] ) );
-      matrix = matrix4x4.Mult( matrix , matrix4x4.Scaling( objects[index].scale[0] , objects[index].scale[1] , objects[index].scale[2] ) );
+      CalculateMatrix( objects[index] , viewMatrix , projectionMatrix );
       
       gl.uniformMatrix4fv( varLocations.u_matrix , true , matrix );
       objects[index].Draw( gl );
     }
     requestAnimationFrame(DrawScene);
   }
+}
+
+function CalculateMatrix( obj , viewMatrix , projectionMatrix ) {
+  let matrix = matrix4x4.Identity();
+  matrix = matrix4x4.Mult( matrix , projectionMatrix );
+  matrix = matrix4x4.Mult( matrix , viewMatrix );
+  matrix = matrix4x4.Mult( matrix , matrix4x4.Translation( obj.position[0] , obj.position[1] , obj.position[2] ) );
+  matrix = matrix4x4.Mult( matrix , matrix4x4.XRotation( obj.rotation[0] ) );
+  matrix = matrix4x4.Mult( matrix , matrix4x4.YRotation( obj.rotation[1] ) );
+  matrix = matrix4x4.Mult( matrix , matrix4x4.ZRotation( obj.rotation[2] ) );
+  matrix = matrix4x4.Mult( matrix , matrix4x4.Scaling( obj.scale[0] , obj.scale[1] , obj.scale[2] ) );
+}
+
+function CreateSpline( spline ) {
+  spline.SetPoint( vector4.Create( 100 , 100 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( -300 , 150 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( -100 , -100 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( -50 , 0 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( 20 , 20 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( -175 , 75 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( 25 , 125 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( 75 , 175 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( 175 , -175 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( -75 , -175 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( -300 , 150 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( 75 , 175 , -200 , 1 ) );
+}
+
+async function SetupProgram( glObjs , gl ) {
+  glObjs.fragmentShaderSource = await ReadFile( './shader.frag' )
+  glObjs.vertexShaderSource = await ReadFile( './shader.vert' )
+  glObjs.vertexShader = CreateShader( gl , gl.VERTEX_SHADER , glObjs.vertexShaderSource );
+  glObjs.fragmentShader = CreateShader( gl , gl.FRAGMENT_SHADER , glObjs.fragmentShaderSource );
+  glObjs.program = CreateProgram( gl , glObjs.vertexShader , glObjs.fragmentShader );
+}
+
+function CreateVarLocations( glObjs , varLocations ) {
+  varLocations.a_position = gl.getAttribLocation( glObjs.program, "a_position" );
+  varLocations.a_color = gl.getAttribLocation( glObjs.program , "a_color");
+  varLocations.u_matrix = gl.getUniformLocation( glObjs.program , "u_matrix" );
 }
 
 function CreateFVao( gl , vaos , varLocations ) {

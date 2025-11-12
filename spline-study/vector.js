@@ -3,9 +3,12 @@ export var vector4 =  {
         return [ x , y , z , w ];
     },
 
-    Sum: function( x , y , z , w ) {
-        return [ this.x + x , this.y + y , this.z + z . this.w + w ];
+    Sum: function( vec1 , vec2 ) {
+        return [ vec1[0] + vec2[0] , vec1[1] + vec2[1] , vec1[2] + vec2[2] , 1 ];
     }, 
+    MultByEscalar: function( vector , escalar ) {
+        return [ vector[0] * escalar , vector[1] * escalar , vector[2] * escalar , vector[3] ];
+    },
     Normalize: function(v) {
         var length = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
         if (length > 0.00001) {
