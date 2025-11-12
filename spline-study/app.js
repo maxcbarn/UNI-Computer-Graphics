@@ -21,10 +21,10 @@ async function main( ) {
   htmlObjs.canvas = document.querySelector("#canvas");
   let gl = htmlObjs.canvas.getContext("webgl2");
 
-  SetupProgram( glObjs , gl );
+  await SetupProgram( glObjs , gl );
   gl.useProgram( glObjs.program );
   
-  CreateVarLocations( glObjs , varLocations );
+  CreateVarLocations( gl , glObjs , varLocations );
 
   gl.clearColor( 0 , 0 , 0 , 0 );
   gl.canvas.width = htmlObjs.canvas.width;
@@ -74,9 +74,8 @@ async function main( ) {
 
     for ( let index = 0 ; index < objects.length ; index++ ) {
       gl.bindVertexArray( objects[index].vao );
-      CalculateMatrix( objects[index] , viewMatrix , projectionMatrix );
       
-      gl.uniformMatrix4fv( varLocations.u_matrix , true , matrix );
+      gl.uniformMatrix4fv( varLocations.u_matrix , true , CalculateMatrix( objects[index] , viewMatrix , projectionMatrix ) );
       objects[index].Draw( gl );
     }
     requestAnimationFrame(DrawScene);
@@ -92,21 +91,22 @@ function CalculateMatrix( obj , viewMatrix , projectionMatrix ) {
   matrix = matrix4x4.Mult( matrix , matrix4x4.YRotation( obj.rotation[1] ) );
   matrix = matrix4x4.Mult( matrix , matrix4x4.ZRotation( obj.rotation[2] ) );
   matrix = matrix4x4.Mult( matrix , matrix4x4.Scaling( obj.scale[0] , obj.scale[1] , obj.scale[2] ) );
+  return matrix;
 }
 
 function CreateSpline( spline ) {
-  spline.SetPoint( vector4.Create( 100 , 100 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( -300 , 150 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( -100 , -100 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( -50 , 0 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( 20 , 20 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( -175 , 75 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( 25 , 125 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( 75 , 175 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( 175 , -175 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( -75 , -175 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( -300 , 150 , -200 , 1 ) );
-  spline.SetPoint( vector4.Create( 75 , 175 , -200 , 1 ) );
+  spline.SetPoint( vector4.Create( 100 , 100 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( -300 , 150 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( -100 , -100 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( -50 , 0 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( 20 , 20 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( -175 , 75 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( 25 , 125 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( 75 , 175 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( 175 , -175 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( -75 , -175 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( -300 , 150 , -150 , 1 ) );
+  spline.SetPoint( vector4.Create( 75 , 175 , -150 , 1 ) );
 }
 
 async function SetupProgram( glObjs , gl ) {
@@ -117,8 +117,8 @@ async function SetupProgram( glObjs , gl ) {
   glObjs.program = CreateProgram( gl , glObjs.vertexShader , glObjs.fragmentShader );
 }
 
-function CreateVarLocations( glObjs , varLocations ) {
-  varLocations.a_position = gl.getAttribLocation( glObjs.program, "a_position" );
+function CreateVarLocations( gl , glObjs , varLocations ) {
+  varLocations.a_position = gl.getAttribLocation( glObjs.program , "a_position" );
   varLocations.a_color = gl.getAttribLocation( glObjs.program , "a_color");
   varLocations.u_matrix = gl.getUniformLocation( glObjs.program , "u_matrix" );
 }
@@ -152,51 +152,51 @@ function CreateCubeVao( gl , vaos , varLocations ) {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
     // Front face
     0,   0,   0,
-    150, 0,   0,
-    0,   150, 0,
-    0,   150, 0,
-    150, 0,   0,
-    150, 150, 0,
+    25, 0,   0,
+    0,   25, 0,
+    0,   25, 0,
+    25, 0,   0,
+    25, 25, 0,
 
     // Back face
-    0,   0,   150,
-    0,   150, 150,
-    150, 0,   150,
-    150, 0,   150,
-    0,   150, 150,
-    150, 150, 150,
+    0,   0,   25,
+    0,   25, 25,
+    25, 0,   25,
+    25, 0,   25,
+    0,   25, 25,
+    25, 25, 25,
 
     // Left face
     0,   0,   0,
-    0,   0,   150,
-    0,   150, 0,
-    0,   150, 0,
-    0,   0,   150,
-    0,   150, 150,
+    0,   0,   25,
+    0,   25, 0,
+    0,   25, 0,
+    0,   0,   25,
+    0,   25, 25,
 
     // Right face
-    150, 0,   0,
-    150, 150, 0,
-    150, 0,   150,
-    150, 0,   150,
-    150, 150, 0,
-    150, 150, 150,
+    25, 0,   0,
+    25, 25, 0,
+    25, 0,   25,
+    25, 0,   25,
+    25, 25, 0,
+    25, 25, 25,
 
     // Top face
-    0,   150, 0,
-    0,   150, 150,
-    150, 150, 0,
-    150, 150, 0,
-    0,   150, 150,
-    150, 150, 150,
+    0,   25, 0,
+    0,   25, 25,
+    25, 25, 0,
+    25, 25, 0,
+    0,   25, 25,
+    25, 25, 25,
 
     // Bottom face
     0,   0,   0,
-    150, 0,   0,
-    0,   0,   150,
-    0,   0,   150,
-    150, 0,   0,
-    150, 0,   150,
+    25, 0,   0,
+    0,   0,   25,
+    0,   0,   25,
+    25, 0,   0,
+    25, 0,   25,
   ]), gl.STATIC_DRAW);
   
 

@@ -14,7 +14,7 @@ export class B_Spline {
         this.controlPoints.push( controlPoint );
     }
     GetMaxT() {
-        return (this.controlPoints.length - 3); // one segment per 4 points, overlapping
+        return (this.controlPoints.length - 3);
     }
 
     GetPoint(t) {
@@ -32,13 +32,20 @@ export class B_Spline {
         return this.CalculatePoint(p1, p2, p3, p4, localT);
     }
     CalculatePoint( p1, p2 , p3 , p4 , t ) {
-        let multPoints = [ [] , [] , [] , [] ];
-        multPoints[0] = vector4.Sum( p1 , vector4.Sum( vector4.MultByEscalar( p2 , 4 ) , p3 ) );
-        multPoints[1] = vector4.Sum( vector4.MultByEscalar( p1 , -3 ) , vector4.MultByEscalar( p3 , 3 ) );
-        multPoints[2] = vector4.Sum( vector4.MultByEscalar( p1 , 3 ) , vector4.Sum( vector4.MultByEscalar( p2 , -6 ) , vector4.MultByEscalar( p3 , 3 ) ) );
-        multPoints[3] = vector4.Sum( vector4.Sum( vector4.MultByEscalar( p1 , -1 ) , vector4.MultByEscalar( p2 , 3 ) ) , vector4.Sum( vector4.MultByEscalar( p3 , -3 ) , p4 ) );
-        let sum1 = vector4.Sum( multPoints[0] , vector4.MultByEscalar( multPoints[1] , t ) ) ;
-        let sum2 = vector4.Sum( vector4.MultByEscalar( multPoints[2] , Math.pow( t , 2 ) ) , vector4.MultByEscalar( multPoints[3] , Math.pow( t , 3 ) ) );
-        return  vector4.Sum( sum1 , sum2 );
+        const T = [Math.pow(t, 3), Math.pow(t, 2), t, 1];
+
+        const TM = [0, 0, 0, 0];
+        for (let i = 0; i < 4; ++i) {
+            for (let j = 0; j < 4; ++j) {
+                TM[i] += T[j] * this.splineMatrix[j * 4 + i];
+            }
+        }
+
+        let result = [0, 0, 0, 1];
+        const points = [p1, p2, p3, p4];
+        for (let i = 0; i < 4; ++i) {
+            result = vector4.Sum(result, vector4.MultByEscalar(points[i], TM[i]));
+        }
+        return result;
     }
 }
