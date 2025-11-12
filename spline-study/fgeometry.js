@@ -132,6 +132,8 @@ export function SetGeometry(gl) {
       ]),
       gl.STATIC_DRAW);
 }
+
+// Fill the current ARRAY_BUFFER buffer with colors for the 'F'.
 export function SetColors(gl) {
   gl.bufferData(
       gl.ARRAY_BUFFER,
